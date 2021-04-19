@@ -4,7 +4,7 @@ from tracker import *
 # Create a tracker object 
 tracker = EuclideanDistTracker()
 
-cap = cv2.VideoCapture('E:\PROYECTOS\OPEN CV\Object Tracking\highway.mp4')
+cap = cv2.VideoCapture('/home/juan/Documents/python/tracking/TuttiFrutti - STOP.mp4')
 
 #Object detection from a stable camera
 object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
