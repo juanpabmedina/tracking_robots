@@ -32,14 +32,47 @@ while True:
 
     if not ret:
         break 
+    
+    #Identifico los bordes de la imagen y la binarizo
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    bordes = cv2.Canny(gray, 100, 200)
+    _, dst = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
 
-    mask = object_detector.apply(frame)
+    #Aplico el object detector a los bordes de la imagen
+    mask = object_detector.apply(bordes)
+    _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
+    
+    #Encuentro el contorno de los bordes de la imagen
+    ctns, _= cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #cv2.drawContours(frame, ctns, -1, (0,0,255), 2)
+    (success, boxes) = trackers.update(bordes)
 
-    cv2.imshow('Frame', frame)
-    cv2.imshow('Mask', mask)
-    key = cv2.waitKey(0) & 0xFF
+    if frameNumber == 5:
+
+        for n in range(len(ctns)):
+            cnt = ctns[n]
+            area = cv2.contourArea(cnt)
+            if area > 100:
+                bbi = cv2.boundingRect(cnt)
+                x,y,w,h = bbi
+                img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+                tracker_i = TrDict['csrt']()
+                trackers.add(tracker_i, frame, bbi)
+
+    id = 0
+    for box in boxes:
+        id += 1
+        (x,y,w,h) = [int(a) for a in box]
+        cv2.rectangle(frame, (x,y), (x+w,y+h), (255, 0, 0), 2)
+        cv2.putText(frame, str(id), (x,y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 50 , 50), 2)
+
 
     frameNumber += 1
+    cv2.imshow('Frame', frame)
+    cv2.imshow('Mask', mask)
+    cv2.imshow('Bordes', bordes)
+    key = cv2.waitKey(0) & 0xFF
+
 
     if key == 27:
         break 
