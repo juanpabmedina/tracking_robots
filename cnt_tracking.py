@@ -13,7 +13,12 @@ TrDict = {'csrt': cv2.TrackerCSRT_create,
 
 trackers = cv2.MultiTracker_create()
 
-v = cv2.VideoCapture(r'/home/juan/Documents/python/TuttiFrutti - STOP.mp4')
+VidDict = {'TuttiFrutti - STOP': r'/home/juan/Documents/python/videos/TuttiFrutti - STOP.mp4',
+            'EvoColor - STOP': r'/home/juan/Documents/python/videos/EvoColor - STOP.mp4',
+            'TuttiFrutti - AGGREGATION': r'/home/juan/Documents/python/videos/TuttiFrutti - AGGREGATION.mp4',
+            'TuttiFrutti - FORAGING': r'/home/juan/Documents/python/videos/TuttiFrutti - FORAGING.mp4'}
+
+v = cv2.VideoCapture(VidDict['TuttiFrutti - STOP'])
 
 ret, frame = v.read()
 
@@ -52,7 +57,7 @@ while True:
 
 
     cv2.imshow('Frame', frame)
-    key = cv2.waitKey(0) & 0xFF
+    key = cv2.waitKey(10) & 0xFF
 
     frameNumber += 1
 
