@@ -22,6 +22,10 @@ frameNumber = 0
 while True:
     ret, frame = v.read()
 
+    if not ret:
+        break 
+    (success, boxes) = trackers.update(frame)
+
     if frameNumber == 0:
         grises = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         #bordes = cv2.Canny(grises, 100, 200)
@@ -33,8 +37,19 @@ while True:
             cnt = ctns[n]
             area = cv2.contourArea(cnt)
             if area > 50:
-                x,y,w,h = cv2.boundingRect(cnt)
+                bbi = cv2.boundingRect(cnt)
+                x,y,w,h = bbi
                 img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+                tracker_i = TrDict['csrt']()
+                trackers.add(tracker_i, frame, bbi)
+
+    id = 0
+    for box in boxes:
+        id += 1
+        (x,y,w,h) = [int(a) for a in box]
+        cv2.rectangle(frame, (x,y), (x+w,y+h), (255, 0, 0), 2)
+        cv2.putText(frame, str(id), (x,y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 50 , 50), 2)
+
 
     cv2.imshow('Frame', frame)
     key = cv2.waitKey(0) & 0xFF
