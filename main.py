@@ -4,7 +4,12 @@ from tracker import *
 # Create a tracker object 
 tracker = EuclideanDistTracker()
 
-cap = cv2.VideoCapture('/home/juan/Documents/python/tracking/TuttiFrutti - STOP.mp4')
+VidDict = {'TuttiFrutti - STOP': r'/home/juan/Documents/python/videos/TuttiFrutti - STOP.mp4',
+            'EvoColor - STOP': r'/home/juan/Documents/python/videos/EvoColor - STOP.mp4',
+            'TuttiFrutti - AGGREGATION': r'/home/juan/Documents/python/videos/TuttiFrutti - AGGREGATION.mp4',
+            'TuttiFrutti - FORAGING': r'/home/juan/Documents/python/videos/TuttiFrutti - FORAGING.mp4'}       
+
+cap = cv2.VideoCapture(r'/home/juan/Documents/python/videos/TuttiFrutti - FORAGING.mp4')
 
 #Object detection from a stable camera
 

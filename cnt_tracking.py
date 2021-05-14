@@ -18,7 +18,7 @@ VidDict = {'TuttiFrutti - STOP': r'/home/juan/Documents/python/videos/TuttiFrutt
             'TuttiFrutti - AGGREGATION': r'/home/juan/Documents/python/videos/TuttiFrutti - AGGREGATION.mp4',
             'TuttiFrutti - FORAGING': r'/home/juan/Documents/python/videos/TuttiFrutti - FORAGING.mp4'}
 
-v = cv2.VideoCapture(VidDict['TuttiFrutti - STOP'])
+v = cv2.VideoCapture(VidDict['TuttiFrutti - AGGREGATION'])
 
 ret, frame = v.read()
 
