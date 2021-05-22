@@ -13,12 +13,12 @@ TrDict = {'csrt': cv2.TrackerCSRT_create,
 
 trackers = cv2.MultiTracker_create()
 
-VidDict = {'TuttiFrutti - STOP': r'/home/juan/Documents/python/videos/TuttiFrutti - STOP.mp4',
-            'EvoColor - STOP': r'/home/juan/Documents/python/videos/EvoColor - STOP.mp4',
-            'TuttiFrutti - AGGREGATION': r'/home/juan/Documents/python/videos/TuttiFrutti - AGGREGATION.mp4',
-            'TuttiFrutti - FORAGING': r'/home/juan/Documents/python/videos/TuttiFrutti - FORAGING.mp4'}
+VidDict = {'TuttiFruttiSTOP': r'/home/juan/Documents/python/videos/TuttiFrutti - STOP.mp4',
+            'EvoColorSTOP': r'/home/juan/Documents/python/videos/EvoColor - STOP.mp4',
+            'TuttiFruttiAGGREGATION': r'/home/juan/Documents/python/videos/TuttiFrutti - AGGREGATION.mp4',
+            'TuttiFruttiFORAGING': r'/home/juan/Documents/python/videos/TuttiFrutti - FORAGING.mp4'}
 
-v = cv2.VideoCapture(VidDict['TuttiFrutti - AGGREGATION'])
+v = cv2.VideoCapture(VidDict['TuttiFruttiFORAGING'])
 
 object_detector = cv2.createBackgroundSubtractorKNN(history=100, dist2Threshold=1000, detectShadows=True)
 #object_detector = cv2.createBackgroundSubtractorMOG2(history=200, varThreshold=40, detectShadows=True)
@@ -51,7 +51,7 @@ while True:
         for n in range(len(ctns)):
             cnt = ctns[n]
             area = cv2.contourArea(cnt)
-            if area > 25:
+            if area > 15:
                 bbi = cv2.boundingRect(cnt)
                 x,y,w,h = bbi
                 tracker_i = TrDict['csrt']()
