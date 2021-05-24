@@ -29,7 +29,6 @@ frameNumber = 0
 
 while True:
     ret, frame = v.read()
-
     if not ret:
         break 
     
@@ -47,6 +46,7 @@ while True:
     cv2.drawContours(frame, ctns, -1, (0,0,255), 1)
     (success, boxes) = trackers.update(mask)
 
+    x2,y2,w2,h2 = 0,0,0,0
     if frameNumber == 5:
         for n in range(len(ctns)):
             cnt = ctns[n]
@@ -55,26 +55,36 @@ while True:
                 bbi = cv2.boundingRect(cnt)
                 x,y,w,h = bbi
                 tracker_i = TrDict['csrt']()
-                img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
-                trackers.add(tracker_i, frame, bbi)
+                if w > 15 and h > 15:           
+                    if abs(x2-x) > 5 and abs(y2-y) > 5:
+                        img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+                        trackers.add(tracker_i, frame, bbi)
+                        print(x,y,abs(x2-x),abs(y2-y))
+                        x2,y2,w2,h2 = bbi
 
+                '''
+                if x2-x > 5 or x2-x <-5 and y2-y > 5 or y2-y <-5:
+                        if w2-w > 5 or w2-w <-5 and h2-h > 5 or h2-h <-5:
+                            img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+                            trackers.add(tracker_i, frame, bbi)
+                            '''
 
     id = 0
-    for box in boxes:
+    for box in boxes:                        
         id += 1
         (x,y,w,h) = [int(a) for a in box]
         cv2.rectangle(frame, (x,y), (x+w,y+h), (255, 0, 0), 2)
         cv2.putText(frame, str(id), (x,y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 50 , 50), 2)
         
     frameNumber += 1
-    cv2.imshow('Frame', frame)
-    cv2.imshow('Mask', mask)
-    cv2.imshow('Bordes', bordes)
+    cv2.imshow('Frame', frame)                                                           
+    #cv2.imshow('Mask', mask)
+    #cv2.imshow('Bordes', bordes)
     key = cv2.waitKey(0) & 0xFF
 
-
+                                           
     if key == 27:
         break 
-
+                                                                                                                                            
 v.release()
 cv2.destroyAllWindows()
