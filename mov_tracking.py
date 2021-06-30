@@ -1,24 +1,23 @@
 import cv2 
 import numpy as np 
 
-
-
+'''
 TrDict = {'csrt': cv2.TrackerCSRT_create,
         'kcf' : cv2.TrackerKCF_create,
-        'boosting' : cv2.TrackerBoosting_create,
+        'boosting' : cv2.legacy.TrackerBoosting_create,
         'mil' : cv2.TrackerMIL_create,
-        'tld' : cv2.TrackerTLD_create,
-        'medianflow' : cv2.TrackerMedianFlow_create,
-        'mosse' : cv2.TrackerMOSSE_create}
+        'tld' : cv2.legacy.TrackerTLD_create,
+        'medianflow' : cv2.legacy.TrackerMedianFlow_create,
+        'mosse' : cv2.legacy.TrackerMOSSE_create}
+ '''
+trackers = cv2.legacy.MultiTracker_create()
 
-trackers = cv2.MultiTracker_create()
+VidDict = {'TuttiFruttiSTOP': r'/home/juan/Documents/python/videos/TuttiFruttiSTOP.mp4',
+            'EvoColorSTOP': r'/home/juan/Documents/python/videos/EvoColorSTOP.mp4',
+            'TuttiFruttiAGGREGATION': r'/home/juan/Documents/python/videos/TuttiFruttiAGGREGATION.mp4',
+            'TuttiFruttiFORAGING': r'/home/juan/Documents/python/videos/TuttiFruttiFORAGING.mp4'}
 
-VidDict = {'TuttiFruttiSTOP': r'/home/juan/Documents/python/videos/TuttiFrutti - STOP.mp4',
-            'EvoColorSTOP': r'/home/juan/Documents/python/videos/EvoColor - STOP.mp4',
-            'TuttiFruttiAGGREGATION': r'/home/juan/Documents/python/videos/TuttiFrutti - AGGREGATION.mp4',
-            'TuttiFruttiFORAGING': r'/home/juan/Documents/python/videos/TuttiFrutti - FORAGING.mp4'}
-
-v = cv2.VideoCapture(VidDict['TuttiFruttiFORAGING'])
+v = cv2.VideoCapture(VidDict['EvoColorSTOP'])
 
 object_detector = cv2.createBackgroundSubtractorKNN(history=100, dist2Threshold=1000, detectShadows=True)
 #object_detector = cv2.createBackgroundSubtractorMOG2(history=200, varThreshold=40, detectShadows=True)
@@ -54,20 +53,11 @@ while True:
             if area > 15:
                 bbi = cv2.boundingRect(cnt)
                 x,y,w,h = bbi
-                tracker_i = TrDict['csrt']()
-                if w > 15 and h > 15:           
-                    if abs(x2-x) > 5 and abs(y2-y) > 5:
-                        img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
-                        trackers.add(tracker_i, frame, bbi)
-                        print(x,y,abs(x2-x),abs(y2-y))
-                        x2,y2,w2,h2 = bbi
-
-                '''
-                if x2-x > 5 or x2-x <-5 and y2-y > 5 or y2-y <-5:
-                        if w2-w > 5 or w2-w <-5 and h2-h > 5 or h2-h <-5:
-                            img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
-                            trackers.add(tracker_i, frame, bbi)
-                            '''
+                tracker_i = cv2.legacy.TrackerCSRT_create()
+                #img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
+                img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+                trackers.add(tracker_i, frame, bbi)
+                print("Añadido el traccker")
 
     id = 0
     for box in boxes:                        
@@ -78,8 +68,8 @@ while True:
         
     frameNumber += 1
     cv2.imshow('Frame', frame)                                                           
-    #cv2.imshow('Mask', mask)
-    #cv2.imshow('Bordes', bordes)
+    cv2.imshow('Mask', mask)
+    cv2.imshow('Bordes', bordes)
     key = cv2.waitKey(0) & 0xFF
 
                                            
