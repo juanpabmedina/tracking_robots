@@ -8,9 +8,9 @@ VidDict = {'TuttiFruttiSTOP': r'/home/juan/Documents/python/videos/TuttiFruttiST
             'TuttiFruttiAGGREGATION': r'/home/juan/Documents/python/videos/TuttiFruttiAGGREGATION.mp4',
             'TuttiFruttiFORAGING': r'/home/juan/Documents/python/videos/TuttiFruttiFORAGING.mp4'}
 
-v = cv2.VideoCapture(VidDict['EvoColorSTOP'])
+v = cv2.VideoCapture(VidDict['TuttiFruttiSTOP'])
 
-object_detector = cv2.createBackgroundSubtractorKNN(history=100, dist2Threshold=1000, detectShadows=True)
+object_detector = cv2.createBackgroundSubtractorKNN(history=500, dist2Threshold=400, detectShadows=True)
 #object_detector = cv2.createBackgroundSubtractorMOG2(history=200, varThreshold=40, detectShadows=True)
 
 ret, frame = v.read()
@@ -27,37 +27,40 @@ while True:
     bordes = cv2.Canny(gray, 100, 200)
     _, dst = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
 
+    """
+    #Dilatacion 
+    kernel = np.ones((5,5),np.uint8)
+    dil_img = cv2.dilate(bordes,kernel, iterations=1)
+    """
+    
     #Aplico el object detector a los bordes de la imagen
-    mask = object_detector.apply(bordes)
-    _, mask = cv2.threshold(mask, 254, 255, cv2.THRESH_BINARY)
+    mov_obj = object_detector.apply(bordes)
+
+    #Aplico closing para rellenar los espacios
+    kernel = np.ones((5,5),np.uint8)
+    clos_img = cv2.morphologyEx(mov_obj, cv2.MORPH_CLOSE, kernel)
     
     #Encuentro el contorno de los bordes de la imagen
-    ctns, _= cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    ctns, _= cv2.findContours(clos_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     cv2.drawContours(frame, ctns, -1, (0,0,255), 1)
-    (success, boxes) = trackers.update(mask)
+    (success, boxes) = trackers.update(clos_img)
 
-    x2,y2,w2,h2 = 0,0,0,0
     if frameNumber == 5:
         for n in range(len(ctns)):
             cnt = ctns[n]
             area = cv2.contourArea(cnt)
             
             #Filtro por area 
-            if area > 15:
+            if area > 500:
                 bbi = cv2.boundingRect(cnt)
                 x,y,w,h = bbi
 
                 #Seleccion de algoritmo de tracker.
                 tracker_i = cv2.legacy.TrackerCSRT_create()
 
-                #Filtro por tamaño
-                if w > 15 and h > 15:           
-                    if abs(x2-x) > 5 and abs(y2-y) > 5:
-                        img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
-                        trackers.add(tracker_i, frame, bbi)
-                        print(x,y,abs(x2-x),abs(y2-y))
-                        x2,y2,w2,h2 = bbi
-
+                img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+                trackers.add(tracker_i, frame, bbi)
+    
                
     id = 0
     for box in boxes:                        
@@ -68,8 +71,11 @@ while True:
         
     frameNumber += 1
     cv2.imshow('Frame', frame)                                                           
-    cv2.imshow('Mask', mask)
-    cv2.imshow('Bordes', bordes)
+    #cv2.imshow('mov_obj', mov_obj)
+    #cv2.imshow('Bordes', bordes)
+    cv2.imshow('Closing', clos_img)
+    #cv2.imshow('Img Binaria', dst)
+    #cv2.imshow('Dilatacion', dil_img)
     key = cv2.waitKey(0) & 0xFF
 
                                            
