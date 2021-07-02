@@ -17,6 +17,8 @@ ret, frame = v.read()
 
 frameNumber = 0
 
+baseDir = r'/home/juan/Documents/python/tracking/tracking_results'
+
 while True:
     ret, frame = v.read()
     if not ret:
@@ -61,7 +63,13 @@ while True:
                 img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
                 trackers.add(tracker_i, frame, bbi)
     
-               
+    #Save the data in a text file 
+    np.savetxt(baseDir + '/frame_'+str(frameNumber)+'.txt', boxes, fmt='%f')
+    
+    #Show how many objects was detected            
+    cv2.putText(frame, 'Objetos: ', (20,300), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255),2)
+    cv2.putText(frame, str(len(boxes)), (130,300), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255),2)
+
     id = 0
     for box in boxes:                        
         id += 1
@@ -76,7 +84,7 @@ while True:
     cv2.imshow('Closing', clos_img)
     #cv2.imshow('Img Binaria', dst)
     #cv2.imshow('Dilatacion', dil_img)
-    key = cv2.waitKey(0) & 0xFF
+    key = cv2.waitKey(10) & 0xFF
 
                                            
     if key == 27:
