@@ -8,7 +8,7 @@ VidDict = {'TuttiFruttiSTOP': r'/home/juan/Documents/python/videos/TuttiFruttiST
             'TuttiFruttiAGGREGATION': r'/home/juan/Documents/python/videos/TuttiFruttiAGGREGATION.mp4',
             'TuttiFruttiFORAGING': r'/home/juan/Documents/python/videos/TuttiFruttiFORAGING.mp4'}
 
-v = cv2.VideoCapture(VidDict['TuttiFruttiSTOP'])
+v = cv2.VideoCapture(VidDict['EvoColorSTOP'])
 
 object_detector = cv2.createBackgroundSubtractorKNN(history=500, dist2Threshold=400, detectShadows=True)
 #object_detector = cv2.createBackgroundSubtractorMOG2(history=200, varThreshold=40, detectShadows=True)
@@ -39,29 +39,40 @@ while True:
     mov_obj = object_detector.apply(bordes)
 
     #Aplico closing para rellenar los espacios
-    kernel = np.ones((5,5),np.uint8)
-    clos_img = cv2.morphologyEx(mov_obj, cv2.MORPH_CLOSE, kernel)
+    kernel = np.ones((2,2),np.uint8)
+    clos_img = cv2.morphologyEx(mov_obj, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+    #Aplico opening 
+    #kernel = np.ones((5,5),np.uint8)
+    open_img = cv2.morphologyEx(clos_img, cv2.MORPH_OPEN, kernel, iterations=2)
+
+    #eros_img = cv2.erode(clos_img,kernel,iterations = 1)
+
+    #clos_img2 = cv2.morphologyEx(eros_img, cv2.MORPH_CLOSE, kernel, iterations=1)
     
     #Encuentro el contorno de los bordes de la imagen
-    ctns, _= cv2.findContours(clos_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    ctns, _= cv2.findContours(open_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     cv2.drawContours(frame, ctns, -1, (0,0,255), 1)
-    (success, boxes) = trackers.update(clos_img)
 
-    if frameNumber == 5:
+    #Actualize tracker
+    (success, boxes) = trackers.update(frame)
+
+    if frameNumber == 6:
         for n in range(len(ctns)):
             cnt = ctns[n]
             area = cv2.contourArea(cnt)
             
             #Filtro por area 
-            if area > 500:
+            if area > 150:
                 bbi = cv2.boundingRect(cnt)
-                x,y,w,h = bbi
+                x,y,_,_ = bbi
+                w = 25
+                h = 25
 
                 #Seleccion de algoritmo de tracker.
                 tracker_i = cv2.legacy.TrackerCSRT_create()
-
                 img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
-                trackers.add(tracker_i, frame, bbi)
+                trackers.add(tracker_i, frame, bbi) 
     
     #Save the data in a text file 
     np.savetxt(baseDir + '/frame_'+str(frameNumber)+'.txt', boxes, fmt='%f')
@@ -74,17 +85,21 @@ while True:
     for box in boxes:                        
         id += 1
         (x,y,w,h) = [int(a) for a in box]
-        cv2.rectangle(frame, (x,y), (x+w,y+h), (255, 0, 0), 2)
+      
+        cv2.rectangle(frame, (x,y), (x+25,y+25), (255, 0, 0), 2)
         cv2.putText(frame, str(id), (x,y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 50 , 50), 2)
+
         
     frameNumber += 1
-    cv2.imshow('Frame', frame)                                                           
+
+    #cv2.imshow('Closing', clos_img)
+    cv2.imshow('Frame', frame)
+    cv2.imshow('Erosion', open_img)                                                      
     #cv2.imshow('mov_obj', mov_obj)
     #cv2.imshow('Bordes', bordes)
-    cv2.imshow('Closing', clos_img)
     #cv2.imshow('Img Binaria', dst)
     #cv2.imshow('Dilatacion', dil_img)
-    key = cv2.waitKey(10) & 0xFF
+    key = cv2.waitKey(0) & 0xFF
 
                                            
     if key == 27:
