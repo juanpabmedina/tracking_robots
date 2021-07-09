@@ -8,12 +8,19 @@ VidDict = {'TuttiFruttiSTOP': r'/home/juan/Documents/python/videos/TuttiFruttiST
             'TuttiFruttiAGGREGATION': r'/home/juan/Documents/python/videos/TuttiFruttiAGGREGATION.mp4',
             'TuttiFruttiFORAGING': r'/home/juan/Documents/python/videos/TuttiFruttiFORAGING.mp4'}
 
-v = cv2.VideoCapture(VidDict['EvoColorSTOP'])
+v = cv2.VideoCapture(VidDict['TuttiFruttiFORAGING'])
 
 object_detector = cv2.createBackgroundSubtractorKNN(history=500, dist2Threshold=400, detectShadows=True)
 #object_detector = cv2.createBackgroundSubtractorMOG2(history=200, varThreshold=40, detectShadows=True)
 
 ret, frame = v.read()
+
+tracker_init = False
+
+#Cuantos objetos queremos encontrar
+obj_num = 20
+
+obj = []
 
 frameNumber = 0
 
@@ -29,12 +36,6 @@ while True:
     bordes = cv2.Canny(gray, 100, 200)
     _, dst = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
 
-    """
-    #Dilatacion 
-    kernel = np.ones((5,5),np.uint8)
-    dil_img = cv2.dilate(bordes,kernel, iterations=1)
-    """
-    
     #Aplico el object detector a los bordes de la imagen
     mov_obj = object_detector.apply(bordes)
 
@@ -43,13 +44,8 @@ while True:
     clos_img = cv2.morphologyEx(mov_obj, cv2.MORPH_CLOSE, kernel, iterations=2)
 
     #Aplico opening 
-    #kernel = np.ones((5,5),np.uint8)
     open_img = cv2.morphologyEx(clos_img, cv2.MORPH_OPEN, kernel, iterations=2)
 
-    #eros_img = cv2.erode(clos_img,kernel,iterations = 1)
-
-    #clos_img2 = cv2.morphologyEx(eros_img, cv2.MORPH_CLOSE, kernel, iterations=1)
-    
     #Encuentro el contorno de los bordes de la imagen
     ctns, _= cv2.findContours(open_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     cv2.drawContours(frame, ctns, -1, (0,0,255), 1)
@@ -57,22 +53,44 @@ while True:
     #Actualize tracker
     (success, boxes) = trackers.update(frame)
 
-    if frameNumber == 6:
+    obj_detect = len(obj)
+
+    #Aplica la mascara de moviemiento hasta encontrar la cantidad de obj buscados
+    if frameNumber > 3 and obj_detect < 20: 
+        obj = []
+
         for n in range(len(ctns)):
             cnt = ctns[n]
             area = cv2.contourArea(cnt)
             
             #Filtro por area 
-            if area > 150:
+            if area > 200:
+                
+                print(obj_detect)
                 bbi = cv2.boundingRect(cnt)
+                obj.append(bbi)
                 x,y,_,_ = bbi
                 w = 25
                 h = 25
+                #muestra los obj identificados 
+                img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)  
 
-                #Seleccion de algoritmo de tracker.
-                tracker_i = cv2.legacy.TrackerCSRT_create()
-                img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
-                trackers.add(tracker_i, frame, bbi) 
+    #Una vez encontrados los obj se los agrega al tracker
+    if len(obj) == 20 and tracker_init == False:
+        #Comentar este for y darle un valo9r a n para hacer el tracking de 1 solo obj
+        for n in range(len(obj)):
+            bbi = obj[n]
+            x,y,_,_ = bbi
+            w = 25
+            h = 25
+            #Seleccion de algoritmo de tracker.
+            img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
+            tracker_i = cv2.legacy.TrackerCSRT_create()
+            trackers.add(tracker_i, frame, bbi) 
+        tracker_init = True
+
+
+    
     
     #Save the data in a text file 
     np.savetxt(baseDir + '/frame_'+str(frameNumber)+'.txt', boxes, fmt='%f')
