@@ -8,7 +8,7 @@ VidDict = {'TuttiFruttiSTOP': r'/home/juan/Documents/python/videos/TuttiFruttiST
             'TuttiFruttiAGGREGATION': r'/home/juan/Documents/python/videos/TuttiFruttiAGGREGATION.mp4',
             'TuttiFruttiFORAGING': r'/home/juan/Documents/python/videos/TuttiFruttiFORAGING.mp4'}
 
-v = cv2.VideoCapture(VidDict['TuttiFruttiFORAGING'])
+v = cv2.VideoCapture(VidDict['TuttiFruttiAGGREGATION'])
 
 object_detector = cv2.createBackgroundSubtractorKNN(history=500, dist2Threshold=400, detectShadows=True)
 #object_detector = cv2.createBackgroundSubtractorMOG2(history=200, varThreshold=40, detectShadows=True)
@@ -21,6 +21,8 @@ tracker_init = False
 obj_num = 20
 
 obj = []
+
+supr_id = []
 
 frameNumber = 0
 
@@ -48,7 +50,7 @@ while True:
 
     #Encuentro el contorno de los bordes de la imagen
     ctns, _= cv2.findContours(open_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.drawContours(frame, ctns, -1, (0,0,255), 1)
+ 
 
     #Actualize tracker
     (success, boxes) = trackers.update(frame)
@@ -60,20 +62,36 @@ while True:
         obj = []
 
         for n in range(len(ctns)):
-            cnt = ctns[n]
-            area = cv2.contourArea(cnt)
             
+            cnt = ctns[n]
+            cv2.drawContours(frame, ctns, -1, (0,0,255), 1)
+            area = cv2.contourArea(cnt)
+
+
             #Filtro por area 
             if area > 200:
-                
-                print(obj_detect)
+                #Bouning boxes con funcion bounding react
+                """
                 bbi = cv2.boundingRect(cnt)
                 obj.append(bbi)
                 x,y,_,_ = bbi
+                """
+                
                 w = 25
                 h = 25
+
+                #Bounding boxes con centro de masa
+                m = cv2.moments(cnt)
+                xm = m['m10']/m['m00']
+                ym = m['m01']/m['m00']
+                cv2.circle(frame, (int(xm),int(ym)), 5, 255, 2)
+                x1 = int(xm-w/2)
+                y1 = int(ym-h/2)
+                bbi = x1,y1,w,h
+                obj.append(bbi)
+
                 #muestra los obj identificados 
-                img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)  
+                img = cv2.rectangle(frame,(x1,y1),(x1+w,y1+h),(0,255,0),2)  
 
     #Una vez encontrados los obj se los agrega al tracker
     if len(obj) == 20 and tracker_init == False:
@@ -81,17 +99,19 @@ while True:
         for n in range(len(obj)):
             bbi = obj[n]
             x,y,_,_ = bbi
-            w = 25
-            h = 25
+            
             #Seleccion de algoritmo de tracker.
             img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
             tracker_i = cv2.legacy.TrackerCSRT_create()
             trackers.add(tracker_i, frame, bbi) 
+            
+
         tracker_init = True
+    
+   
 
 
-    
-    
+
     #Save the data in a text file 
     np.savetxt(baseDir + '/frame_'+str(frameNumber)+'.txt', boxes, fmt='%f')
     
@@ -99,15 +119,33 @@ while True:
     cv2.putText(frame, 'Objetos: ', (20,300), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255),2)
     cv2.putText(frame, str(len(boxes)), (130,300), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255),2)
 
+
     id = 0
-    for box in boxes:                        
+    #Umbral de pixeles para detectar supersosicion
+    pix_ol = 10
+    supr_box = False
+    
+
+    for box in boxes:                       
         id += 1
-        (x,y,w,h) = [int(a) for a in box]
-      
-        cv2.rectangle(frame, (x,y), (x+25,y+25), (255, 0, 0), 2)
+        (x,y,_,_) = [int(a) for a in box]
+
+        # Comparo las bbx para encontrar si estan superpuestas 
+        id2 = 0
+        
+
+        for box1 in boxes:
+            id2 += 1
+            xc, yc, _, _ = box-box1
+            
+            if (xc < pix_ol and yc < pix_ol) and (xc > -pix_ol and yc > -pix_ol):
+                if id != id2:
+                    print(f"Superposicion de {id} y {id2}")
+        
+       
+        cv2.rectangle(frame, (x,y), (x+w,y+h), (255, 0, 0), 2)
         cv2.putText(frame, str(id), (x,y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 50 , 50), 2)
 
-        
     frameNumber += 1
 
     #cv2.imshow('Closing', clos_img)
