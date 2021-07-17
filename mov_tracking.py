@@ -22,7 +22,7 @@ obj_num = 20
 
 obj = []
 
-supr_id = []
+supr_id = [0]  
 
 frameNumber = 0
 
@@ -107,9 +107,6 @@ while True:
             
 
         tracker_init = True
-    
-   
-
 
 
     #Save the data in a text file 
@@ -123,8 +120,7 @@ while True:
     id = 0
     #Umbral de pixeles para detectar supersosicion
     pix_ol = 10
-    supr_box = False
-    
+    append_id = True
 
     for box in boxes:                       
         id += 1
@@ -140,11 +136,28 @@ while True:
             
             if (xc < pix_ol and yc < pix_ol) and (xc > -pix_ol and yc > -pix_ol):
                 if id != id2:
-                    print(f"Superposicion de {id} y {id2}")
-        
-       
-        cv2.rectangle(frame, (x,y), (x+w,y+h), (255, 0, 0), 2)
-        cv2.putText(frame, str(id), (x,y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 50 , 50), 2)
+                    #print(f"Superposicion de {id} y {id2}")
+                    n=0
+                    #Guardo las id en un vector sin que se repitan
+                    for n in range(len(supr_id)):
+                        if id == supr_id[n]:
+                            append_id = False
+                    if append_id == True:
+                        supr_id.append(id)
+                        print(supr_id)
+        n = 0
+
+        supr_box = False
+
+        for n in range(len(supr_id)):
+            if id == supr_id[n]:
+                print(supr_id[n])
+                supr_box = True
+        if supr_box == False:        
+            cv2.rectangle(frame, (x,y), (x+w,y+h), (255, 0, 0), 2)
+            cv2.putText(frame, str(id), (x,y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 50 , 50), 2)
+        else:
+            cv2.rectangle(frame, (x,y), (x+w,y+h), (0, 0, 255), 2)
 
     frameNumber += 1
 
