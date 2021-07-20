@@ -8,7 +8,7 @@ VidDict = {'TuttiFruttiSTOP': r'/home/juan/Documents/python/videos/TuttiFruttiST
             'TuttiFruttiAGGREGATION': r'/home/juan/Documents/python/videos/TuttiFruttiAGGREGATION.mp4',
             'TuttiFruttiFORAGING': r'/home/juan/Documents/python/videos/TuttiFruttiFORAGING.mp4'}
 
-v = cv2.VideoCapture(VidDict['TuttiFruttiAGGREGATION'])
+v = cv2.VideoCapture(VidDict['TuttiFruttiFORAGING'])
 
 object_detector = cv2.createBackgroundSubtractorKNN(history=500, dist2Threshold=400, detectShadows=True)
 #object_detector = cv2.createBackgroundSubtractorMOG2(history=200, varThreshold=40, detectShadows=True)
@@ -19,14 +19,62 @@ tracker_init = False
 
 #Cuantos objetos queremos encontrar
 obj_num = 20
-
-obj = []
-
 supr_id = [0]  
 
 frameNumber = 0
 
+supr_box = False
+
+obj = []
+
 baseDir = r'/home/juan/Documents/python/tracking/tracking_results'
+
+
+def identObjects():
+    
+    global obj
+    obj = []
+
+    for n in range(len(ctns)):
+        
+        cnt = ctns[n]
+        cv2.drawContours(frame, ctns, -1, (0,0,255), 1)
+        area = cv2.contourArea(cnt)
+
+
+        #Filtro por area 
+        if area > 200:
+            #Bouning boxes con funcion bounding react
+            """
+            bbi = cv2.boundingRect(cnt)
+            obj.append(bbi)
+            x,y,_,_ = bbi
+            """
+            
+            global w,h
+
+            w = 25
+            h = 25
+
+            #Bounding boxes con centro de masa
+            m = cv2.moments(cnt)
+            xm = m['m10']/m['m00']
+            ym = m['m01']/m['m00']
+            cv2.circle(frame, (int(xm),int(ym)), 5, 255, 2)
+            x1 = int(xm-w/2)
+            y1 = int(ym-h/2)
+            bbi = x1,y1,w,h
+
+            obj.append(bbi)
+
+            global obj_detect
+            obj_detect = len(obj)
+
+            #muestra los obj identificados 
+            #img = cv2.rectangle(frame,(x1,y1),(x1+w,y1+h),(0,255,0),2)  
+
+
+
 
 while True:
     ret, frame = v.read()
@@ -56,53 +104,25 @@ while True:
     (success, boxes) = trackers.update(frame)
 
     obj_detect = len(obj)
+  
 
     #Aplica la mascara de moviemiento hasta encontrar la cantidad de obj buscados
     if frameNumber > 3 and obj_detect < 20: 
-        obj = []
+        identObjects()
 
-        for n in range(len(ctns)):
-            
-            cnt = ctns[n]
-            cv2.drawContours(frame, ctns, -1, (0,0,255), 1)
-            area = cv2.contourArea(cnt)
-
-
-            #Filtro por area 
-            if area > 200:
-                #Bouning boxes con funcion bounding react
-                """
-                bbi = cv2.boundingRect(cnt)
-                obj.append(bbi)
-                x,y,_,_ = bbi
-                """
-                
-                w = 25
-                h = 25
-
-                #Bounding boxes con centro de masa
-                m = cv2.moments(cnt)
-                xm = m['m10']/m['m00']
-                ym = m['m01']/m['m00']
-                cv2.circle(frame, (int(xm),int(ym)), 5, 255, 2)
-                x1 = int(xm-w/2)
-                y1 = int(ym-h/2)
-                bbi = x1,y1,w,h
-                obj.append(bbi)
-
-                #muestra los obj identificados 
-                img = cv2.rectangle(frame,(x1,y1),(x1+w,y1+h),(0,255,0),2)  
-
+ 
     #Una vez encontrados los obj se los agrega al tracker
     if len(obj) == 20 and tracker_init == False:
         #Comentar este for y darle un valo9r a n para hacer el tracking de 1 solo obj
         for n in range(len(obj)):
             bbi = obj[n]
             x,y,_,_ = bbi
-            
+             
             #Seleccion de algoritmo de tracker.
-            img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
+            
             tracker_i = cv2.legacy.TrackerCSRT_create()
+            img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
+
             trackers.add(tracker_i, frame, bbi) 
             
 
@@ -121,6 +141,7 @@ while True:
     #Umbral de pixeles para detectar supersosicion
     pix_ol = 10
     append_id = True
+    supr_box = False
 
     for box in boxes:                       
         id += 1
@@ -128,42 +149,55 @@ while True:
 
         # Comparo las bbx para encontrar si estan superpuestas 
         id2 = 0
-        
+     
 
         for box1 in boxes:
             id2 += 1
             xc, yc, _, _ = box-box1
             
             if (xc < pix_ol and yc < pix_ol) and (xc > -pix_ol and yc > -pix_ol):
-                if id != id2:
-                    #print(f"Superposicion de {id} y {id2}")
+                if id != id2:                    
+                    print(f"Superposicion de {id} y {id2}")
+                    supr_box = True
+                    
                     n=0
                     #Guardo las id en un vector sin que se repitan
-                    for n in range(len(supr_id)):
-                        if id == supr_id[n]:
+                    for n in supr_id:
+                        if id == n:
                             append_id = False
                     if append_id == True:
                         supr_id.append(id)
-                        print(supr_id)
-        n = 0
 
-        supr_box = False
+        cv2.rectangle(frame, (x,y), (x+w,y+h), (255, 0, 0), 2)
+        cv2.putText(frame, str(id), (x,y - 5), cv2.FONT_HERSHEY_PLAIN, 1, (255, 50 , 50), 1)
 
-        for n in range(len(supr_id)):
-            if id == supr_id[n]:
-                print(supr_id[n])
-                supr_box = True
-        if supr_box == False:        
-            cv2.rectangle(frame, (x,y), (x+w,y+h), (255, 0, 0), 2)
-            cv2.putText(frame, str(id), (x,y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (255, 50 , 50), 2)
-        else:
-            cv2.rectangle(frame, (x,y), (x+w,y+h), (0, 0, 255), 2)
+    id = 0
+
+    if supr_box == True:     
+        trackers = cv2.legacy.MultiTracker_create()  
+        
+        for box in boxes:    
+            id += 1
+            append_id = True 
+            for id2 in supr_id:
+                if id == id2:
+                    append_id = False 
+            if append_id == True:
+                tracker_i = cv2.legacy.TrackerCSRT_create()
+                trackers.add(tracker_i, frame, box)  
+
+
+
+          
+
+    
+
 
     frameNumber += 1
 
     #cv2.imshow('Closing', clos_img)
     cv2.imshow('Frame', frame)
-    cv2.imshow('Erosion', open_img)                                                      
+    #cv2.imshow('Erosion', open_img)                                                      
     #cv2.imshow('mov_obj', mov_obj)
     #cv2.imshow('Bordes', bordes)
     #cv2.imshow('Img Binaria', dst)
